@@ -18,6 +18,7 @@ library(RcppRoll)
 #Utiliza-se os dados com nowcasting, ou seja, 
 #o número esperado de pessoas com exame positivo ou negativo 
 #se todos os pacientes notificados tivessem feito exame.
+
 covid <- read_csv("nowcasting/dados/covid_preditos.csv")
 covid <- subset(covid, covid$DADOS == "Nowcasted")
 covid <- covid %>% dplyr::select(INICIO_SINTOMAS, MEDIANA_CASOS)
@@ -73,9 +74,9 @@ expostos$EXPOSTOS <- roll_sum(covid$MEDIANA_CASOS,2, fill = 0, align = "right") 
 expostos <- expostos %>% dplyr::select(DATA, EXPOSTOS)
 expostos_proj <- forecast(auto.arima(expostos$EXPOSTOS),
 			  h=((Sys.Date()-1)-max(as.Date(expostos$DATA))))$mean[1:((Sys.Date()-1)-max(as.Date(expostos$DATA)))] %>% 
-		as.data.frame()
+	as.data.frame()
 expostos_proj$DATA <- c((max(as.Date(expostos$DATA))+1):(Sys.Date()-1)) %>% as.Date(origin = "1970-01-01") %>% 
-			as.character()
+	as.character()
 names(expostos_proj) <- c("EXPOSTOS", "DATA")
 expostos <- rbind(expostos, expostos_proj) %>% as.data.frame()
 
@@ -95,10 +96,10 @@ infectantes$INICIO_SINTOMAS <- NULL
 infectantes$INFECTANTES <- roll_sum(covid$MEDIANA_CASOS,11, fill = 0, align = "right") #menos de 3 dias do início dos sintomas
 infectantes <- infectantes %>% dplyr::select(DATA, INFECTANTES)
 infectantes_proj <- forecast(auto.arima(infectantes$INFECTANTES),
-			  h=((Sys.Date()-1)-max(as.Date(infectantes$DATA))))$mean[1:((Sys.Date()-1)-max(as.Date(infectantes$DATA)))] %>% 
-		as.data.frame()
+			     h=((Sys.Date()-1)-max(as.Date(infectantes$DATA))))$mean[1:((Sys.Date()-1)-max(as.Date(infectantes$DATA)))] %>% 
+	as.data.frame()
 infectantes_proj$DATA <- c((max(as.Date(infectantes$DATA))+1):(Sys.Date()-1)) %>% as.Date(origin = "1970-01-01") %>% 
-			as.character()
+	as.character()
 names(infectantes_proj) <- c("INFECTANTES", "DATA")
 infectantes <- rbind(infectantes, infectantes_proj) %>% as.data.frame()
 
@@ -106,10 +107,10 @@ infectantes <- rbind(infectantes, infectantes_proj) %>% as.data.frame()
 #Estimativa do número de óbitos
 #################################################
 obitos <- data.frame("DATA" = c("2020-03-31", "2020-04-02", "2020-04-07", "2020-04-21",
-			     	"2020-04-24", "2020-04-30", "2020-05-04", "2020-06-06",
-			     	"2020-06-10", "2020-06-12", "2020-06-19", "2020-06-20", 
+				"2020-04-24", "2020-04-30", "2020-05-04", "2020-06-06",
+				"2020-06-10", "2020-06-12", "2020-06-19", "2020-06-20", 
 				"2020-06-22", "2020-06-22"),
-	    	     "OBITOS" = rep(1,14))
+				"OBITOS" = rep(1,14))
 
 
 #################################################
@@ -144,38 +145,38 @@ base <- na.omit(base) #excluindo dadas posteriores a sysdate -1
 
 
 # Estimando o Rt ----------------------------------------------------------
-incidencia <- base$EXPOSTOS
+incidencia <- (POP - base$SUSCETIVEIS) #População - suscetíveis = número de pessoas que já foram infectadas
 names(incidencia) <- base$DATA # a base precisa ser um vetor nomeado
 
 
 res <- estimate_R(incidencia,
-	method =  "parametric_si",
-	config = make_config(list(
-	mean_si = 4.8, std_si = 2.3))
-	)
+		  method =  "parametric_si",
+		  config = make_config(list(
+		  	mean_si = 4.8, std_si = 2.3))
+)
 
 
 
 res1 <- estimate_R(incidencia,
-	method =  "parametric_si",
-	config = make_config(list(si_parametric_distr = "L",
-                               mean_si = 4.8, std_mean_si = 0.71,
-                               min_mean_si = 3.8, max_mean_si = 6.1,
-                               std_si = 2.3, std_std_si = 0.58,
-                               min_std_si = 1.6, max_std_si = 3.5))
-	)
+		   method =  "parametric_si",
+		   config = make_config(list(si_parametric_distr = "L",
+		   			  mean_si = 4.8, std_mean_si = 0.71,
+		   			  min_mean_si = 3.8, max_mean_si = 6.1,
+		   			  std_si = 2.3, std_std_si = 0.58,
+		   			  min_std_si = 1.6, max_std_si = 3.5))
+)
 
 plot(res)
 plot(res1)
 
 
 res_melt <- cbind(res$R$`Quantile.0.025(R)`, res$R$`Median(R)`, res$R$`Quantile.0.975(R)`, 
-	     base$DATA[(length(base$DATA) - (length(res$R$`Quantile.0.025(R)`)-1)):length(base$DATA)]) %>% as.data.frame()
+		  base$DATA[(length(base$DATA) - (length(res$R$`Quantile.0.025(R)`)-1)):length(base$DATA)]) %>% as.data.frame()
 names(res_melt) <- c("IC025", "MEDIA", "IC975", "DATA")
 res_melt <- melt(res_melt, id.vars = "DATA")
 res_melt$DATA <- as.Date(res_melt$DATA, origin = "1970-01-01")
 ggplot(res_melt, aes(DATA, value, group = variable, color = variable))+
-       	geom_line()+
+	geom_line()+
 	theme_bw()
 
 
@@ -183,32 +184,35 @@ ggplot(res_melt, aes(DATA, value, group = variable, color = variable))+
 
 #Função SEIRD
 SEIRD <- function(t, t0, parms) {
-  with(as.list(c(t0, parms)), {
-    
-    # Population size
-    num <- s.num + e.num + i.num + r.num + d.num
-    
-    # Effective contact rate and FOI from a rearrangement of Beta * c * D
-    ce <- Rt / i.dur
-    lambda <- ce * i.num/num
-  
-    dS <- -lambda*s.num
-    dE <- lambda*s.num - (1/e.dur)*e.num
-    dI <- (1/e.dur)*e.num - (1 - cfr)*(1/i.dur)*i.num - cfr*(1/i.dur)*i.num
-    dR <- (1 - cfr)*(1/i.dur)*i.num
-    dD <- cfr*(1/i.dur)*i.num
-    
-  #Outputs
-    list(c(dS, dE, dI, dR, dD,
-           se.flow = lambda * s.num,
-           ei.flow = (1/e.dur) * e.num,
-           ir.flow = (1 - cfr)*(1/i.dur) * i.num,
-           id.flow = cfr*(1/i.dur)*i.num),
-           num = num,
-           i.prev = i.num / num,
-           ei.prev = (e.num + i.num)/num,
-    	   d.prev = d.num / num)
-  })
+	with(as.list(c(t0, parms)), {
+		
+		# Population size
+		num <- s.num + e.num + i.num + r.num + d.num
+		
+		# Effective contact rate and FOI from a rearrangement of Beta * c * D
+		ce <- Rt / i.dur
+		lambda <- ce * i.num/num
+		
+		dS <- -lambda*s.num
+		dE <- lambda*s.num - (1/e.dur)*e.num
+		dI <- (1/e.dur)*e.num - (1 - cfr)*(1/i.dur)*i.num - cfr*(1/i.dur)*i.num
+		dR <- (1 - cfr)*(1/i.dur)*i.num
+		dD <- cfr*(1/i.dur)*i.num
+		
+		#Outputs
+		list(c(dS, dE, dI, dR, dD,
+		       se.flow = lambda * s.num,
+		       ei.flow = (1/e.dur) * e.num,
+		       ir.flow = (1 - cfr)*(1/i.dur) * i.num,
+		       id.flow = cfr*(1/i.dur)*i.num),
+		     num = num,
+		     s.prev = s.num / num,
+		     e.prev = e.num / num,
+		     i.prev = i.num / num,
+		     ei.prev = (e.num + i.num)/num,
+		     r.prev = r.num / num,
+		     d.prev = d.num / num)
+	})
 }
 
 
@@ -217,7 +221,7 @@ SEIRD <- function(t, t0, parms) {
 ##Número de reprodução efetivo = Rt = Estimado do nowcasting
 ##Duração da exposição (não transmissível) = e.dur = 3 dias
 ##Duração da infecção (trainsmissível) = i.dur = 11 dias
-##Letalidade = cfr = 0.6% Finlândia
+##Letalidade = cfr
 
 #Estados iniciais
 ##Suscetiveis = s.num = População - Expostos - Infectados - Recuperados - Óbitos
@@ -226,16 +230,16 @@ SEIRD <- function(t, t0, parms) {
 ##Recuperados = r.num = Estimado do nowcasting
 ##Óbitos = d.num = Estimado do nowcasting
 
-
+crf_atual <- tail(base$CUM_OBITOS,1)[1]/(POP - tail(base$SUSCETIVEIS,1)[1]) #População - suscetíveis = número de pessoas que já foram infectadas
 
 param <- param.dcm(Rt = c(tail(res$R$`Quantile.0.025(R)`,1), tail(res$R$`Mean(R)`,1), tail(res$R$`Quantile.0.975(R)`,1)), 
-		   e.dur = 3, i.dur = 11, cfr = 0.006)
+		   e.dur = 3, i.dur = 11, cfr = crf_atual)
 init <- init.dcm(s.num = tail(base$SUSCETIVEIS,1)[1], 
 		 e.num = tail(base$EXPOSTOS,1)[1], 
 		 i.num = tail(base$INFECTANTES,1)[1], 
 		 r.num = tail(base$CUM_RECUPERADOS,1)[1], 
 		 d.num = tail(base$CUM_OBITOS,1)[1],
-                 se.flow = 0, 
+		 se.flow = 0, 
 		 ei.flow = 0, 
 		 ir.flow = 0, 
 		 id.flow = 0)
@@ -249,16 +253,15 @@ mod
 
 par(mfrow = c(1, 2))
 plot(mod, y = "i.num", main = "Number Infected")
-plot(mod, y = "d.num", main = "Number Death", legend = "full")
+plot(mod, y = "d.num", main = "Number Death")
 
 
+#Checagem do modelo: Pop (500973) - Suscetíveis = Expostos + Infectantes + Recuperados + Óbitos
+POP - tail(mod$epi$s.num,1)[2] 
+tail(mod$epi$e.num,1)[2] + tail(mod$epi$i.num,1)[2] + tail(mod$epi$r.num,1)[2] + tail(mod$epi$d.num,1)[2]
 
 
-
-tail(mod$epi$i.num,1)
-tail(mod$epi$d.num,1)
-
-
+#Gráficos
 mod_melt <- mod$epi$i.num
 names(mod_melt) <- c("IC025", "MEDIANA", "IC975")
 mod_melt$INICIO_SINTOMAS <- c((Sys.Date()+1):(Sys.Date()+projecao))
