@@ -2,7 +2,7 @@
 options(scipen=999)
 gc()
 set.seed(1)
-options(java.parameters = "-Xmx8g") #Evitar que o java tenha problemas de memória
+options(java.parameters = "-Xmx16g") #Evitar que o java tenha problemas de memória
 
 # Pacotes -----------------------------------------------------------------
 library(readr)
@@ -17,7 +17,7 @@ library(matrixStats)
 
 # Importanto bases ---------------------------------------------------------------
 ## Dados de suspeitos 
-covid <- read_csv("nowcasting/dados/covid_ajustado.csv")
+source("nowcasting/02-transformando_base.R")
 
 # Transformando base ------------------------------------------------------
 covid$ID <- as.factor(covid$ID)
@@ -43,7 +43,7 @@ summary(predic_base)
 
 
 #Iniciando paralelização
-parallelStartSocket(4)
+parallelStartSocket(12)
 
 estimativa <- function(train_test_base, predic_base, seed){
 	
@@ -77,7 +77,7 @@ estimativa <- function(train_test_base, predic_base, seed){
 		makeDiscreteParam("fw.perc", values = seq(0.2, 1, 0.05))
 	)
 	## Estratégia de hiperparametrização - random search
-	ctrl <- makeTuneControlRandom(maxit = 2L)
+	ctrl <- makeTuneControlRandom(maxit = 3L)
 	## Estratégia de ressampling do inner loop - validação cruzada com estratificação dos resultados balanceados entre as folds
 	folds <- 5
 	inner <- makeResampleDesc("CV", iter = folds, stratify = TRUE)
@@ -171,7 +171,7 @@ estimativa <- function(train_test_base, predic_base, seed){
 
 }
 
-n_boot <- 2
+n_boot <- 3
 
 boot_base <- list()
 for(i in 1:n_boot){
@@ -309,7 +309,6 @@ incidencia_periodo <- incidencia_periodo %>%
 
 write.csv(incidencia_total, "nowcasting/dados/incidencia_total.csv", row.names = F, fileEncoding = "UTF-8")
 write.csv(incidencia_periodo, "nowcasting/dados/incidencia_periodo.csv", row.names = F , fileEncoding = "UTF-8")
-
 
 
 # Exportando base ---------------------------------------------------------

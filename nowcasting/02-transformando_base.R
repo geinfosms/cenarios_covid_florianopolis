@@ -13,7 +13,6 @@ library(purrr)
 library(googlesheets4)
 library(tigerstats)
 
-
 # Funcões -----------------------------------------------------------------
 ## Ler as tabelas dentro da planilha de excel
 read_excel_allsheets <- function(filename, tibble = FALSE) {
@@ -25,42 +24,51 @@ read_excel_allsheets <- function(filename, tibble = FALSE) {
 }
 
 #Retirar acentos
-  rm_accent <- function(str,pattern="all") {
-   if(!is.character(str))
-    str <- as.character(str)
-
-  pattern <- unique(pattern)
-
-  if(any(pattern=="Ç"))
-    pattern[pattern=="Ç"] <- "ç"
-
-  symbols <- c(
-    acute = "áéíóúÁÉÍÓÚýÝ",
-    grave = "àèìòùÀÈÌÒÙ",
-    circunflex = "âêîôûÂÊÎÔÛ",
-    tilde = "ãõÃÕñÑ",
-    umlaut = "äëïöüÄËÏÖÜÿ",
-    cedil = "çÇ"
-  )
-
-  nudeSymbols <- c(
-    acute = "aeiouAEIOUyY",
-    grave = "aeiouAEIOU",
-    circunflex = "aeiouAEIOU",
-    tilde = "aoAOnN",
-    umlaut = "aeiouAEIOUy",
-    cedil = "cC"
-  )
-
-  accentTypes <- c("´","`","^","~","¨","ç")
-
-  if(any(c("all","al","a","todos","t","to","tod","todo")%in%pattern)) # opcao retirar todos
-    return(chartr(paste(symbols, collapse=""), paste(nudeSymbols, collapse=""), str))
-
-  for(i in which(accentTypes%in%pattern))
-    str <- chartr(symbols[i],nudeSymbols[i], str) 
-
-  return(str)
+rm_accent <- function(str,pattern="all") {
+	  # Rotinas e funções úteis V 1.0
+	  # rm.accent - REMOVE ACENTOS DE PALAVRAS
+	  # Função que tira todos os acentos e pontuações de um vetor de strings.
+	  # Parâmetros:
+	  # str - vetor de strings que terão seus acentos retirados.
+	  # patterns - vetor de strings com um ou mais elementos indicando quais acentos deverão ser retirados.
+	  #            Para indicar quais acentos deverão ser retirados, um vetor com os símbolos deverão ser passados.
+	  #            Exemplo: pattern = c("´", "^") retirará os acentos agudos e circunflexos apenas.
+	  #            Outras palavras aceitas: "all" (retira todos os acentos, que são "´", "`", "^", "~", "¨", "ç")
+	  if(!is.character(str))
+	    str <- as.character(str)
+	
+	  pattern <- unique(pattern)
+	
+	  if(any(pattern=="Ç"))
+	    pattern[pattern=="Ç"] <- "ç"
+	
+	  symbols <- c(
+	    acute = "áéíóúÁÉÍÓÚýÝ",
+	    grave = "àèìòùÀÈÌÒÙ",
+	    circunflex = "âêîôûÂÊÎÔÛ",
+	    tilde = "ãõÃÕñÑ",
+	    umlaut = "äëïöüÄËÏÖÜÿ",
+	    cedil = "çÇ"
+	  )
+	
+	  nudeSymbols <- c(
+	    acute = "aeiouAEIOUyY",
+	    grave = "aeiouAEIOU",
+	    circunflex = "aeiouAEIOU",
+	    tilde = "aoAOnN",
+	    umlaut = "aeiouAEIOUy",
+	    cedil = "cC"
+	  )
+	
+	  accentTypes <- c("´","`","^","~","¨","ç")
+	
+	  if(any(c("all","al","a","todos","t","to","tod","todo")%in%pattern)) # opcao retirar todos
+	    return(chartr(paste(symbols, collapse=""), paste(nudeSymbols, collapse=""), str))
+	
+	  for(i in which(accentTypes%in%pattern))
+	    str <- chartr(symbols[i],nudeSymbols[i], str)
+	
+	  return(str)
 }
 
 ## Ajutar títulos das bases
@@ -137,9 +145,8 @@ idade$total <- NULL
 
 demografia <- cbind(idade, demografia)
 demografia$territorio <- row.names(demografia)
-
 ## Dados de casos suspeitos
-covid <- read_csv("nowcasting/dados/covid_anonimizado.csv")
+source("nowcasting/01-anonimizando_base.R")
 
 # Transformando base ------------------------------------------------------
 
@@ -231,6 +238,110 @@ covid[which(covid$Bairro == "parque albina"),names(covid) == "Bairro"]<- "outro"
 covid[which(covid$Bairro == "rio pequeno"),names(covid) == "Bairro"]<- "outro"
 covid[which(covid$Bairro == "sem denominacao"),names(covid) == "Bairro"]<- "outro"
 covid[which(covid$Bairro == "vila sao geraldo"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "alto iriru"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "altos de potecas"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "area rural de biguacu"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "areias do meio"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "azenha"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "barra do aririu"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bela vista iii"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bela vita"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bella vista"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bigorrilho"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bisenello"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "boa vista"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bosque das mansoes"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "agua verde"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "br 101"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "brajaru"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "bucarein"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "caieira do norte"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "calehrios"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "campina"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "campo"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "campo duna"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "campos novos"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "cantor"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "cecilia"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "ceniro martins"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "cenrto"),names(covid) == "Bairro"]<- "centro"
+covid[which(covid$Bairro == "centro i"),names(covid) == "Bairro"]<- "centro"
+covid[which(covid$Bairro == "condominio panorama"),names(covid) == "Bairro"]<- "monte cristo"
+covid[which(covid$Bairro == "enseada do brito"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "cs enseada do brito ens brito"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "erondina stefanes iachitzki"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "fazenda sagramento ii"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "fazendo de sto antonio"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "ferrugem"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "flor de napoles"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "flor de napolis"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "floresta"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "foquilhinhas"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "funddos"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "ganchos do meio"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "garo"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "geral"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "guarita"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "guiomar dentro"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "janaina"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "jardim angelica"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "jardim eldorado"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "jardim marco zero"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "jardim paulista"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "jardim santiago"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "joaia"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "machados"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "morro da bina"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "municipios"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "n a"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "nacoes"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "nossa sra do rosario"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "orvalio"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "pacheco"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "pachecos"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "passo da areia"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "picadas do norte"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "picadas do sul"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "pinheira ens brito"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "pioneiro"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "poesa vinte"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "ponta de baixo"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "ponta russa"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "popular"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "potecas"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "prado"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia comprida"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia de fora"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia do mar aberto   pinheira"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia redonda"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "quinze de novembro"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "real park"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "rio grande"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "santa filomena"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sao domingos"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sao jose"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sao luis"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "saudade"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "saveiro"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "serrariar"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sertao do maruim"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "setor habitacional vicente pires"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "setor residencial oeste sao sebastiao"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sntos dumont"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "sorocaba do sul"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "tijuquinhas"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "tijuquinhas guaporanga"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "universitario"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "vendaval"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "barra  do aririu"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "enseada do brito (ens brito)"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "n/a"),names(covid) == "Bairro"]<- NA
+covid[which(covid$Bairro == "nossa sra. do rosario"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "pinheira (ens brito)"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "praia do mar aberto - pinheira"),names(covid) == "Bairro"]<- "outro"
+covid[which(covid$Bairro == "setor residencial oeste (sao sebastiao)"),names(covid) == "Bairro"]<- "outro"
+
 
 covid$Bairro <- ifelse(is.na(covid$Bairro) | covid$Bairro == "outro", covid$Bairro, paste0("cs ",covid$Bairro))
 covid$Bairro <- ajustar_nomes(covid$Bairro)
@@ -446,7 +557,8 @@ covid$TX_INFECTADOS_TERRITORIO <- if_else(is.na(covid$TX_INFECTADOS_TERRITORIO),
 ## O tráfego é mensurado em 4 avenidas da cidade. Utilizou-se a média destas 4 aveindas
 ## Trabalhou-se com a hipótese de que a chance de transimissão pode variar de acordo com o fluxo de carros em 
 ## diferentes períodos. Por isso, utilizaram-se a mobilidade 14 períodos (Periodo atual e 13 dias anteriores à data de primeiros sintomas)
-transito <- read_csv("nowcasting/dados/transito.csv")
+id_transito <- "1lfiVlAcIyMB2lBA3GXEwbN3qQJw0XdvoiNMJfxh1tPI"
+transito <- read_sheet(id_transito,"fluxo_automoveis",skip = 0,col_names = T) %>% as.data.frame()
 transito <- transito[,c(1,5)]
 transito <- na.omit(transito)
 names(transito) <- c("INICIO_SINTOMAS", "MEDIA_TRANSITO")
@@ -558,6 +670,15 @@ covid$RACA_COR <-as.factor(covid$RACA_COR)
 covid$FAIXA_ETARIA <-as.factor(covid$FAIXA_ETARIA)
 covid$INICIO_SINTOMAS <-  as.numeric(covid$INICIO_SINTOMAS)#Transformando em número, pois o learner do mlr não trabalha com data
 covid$DATA_NOTIFICACAO <- as.numeric(covid$DATA_NOTIFICACAO)#Transformando em número, pois o learner do mlr não trabalha com data
+covid$renda_med_pess <- as.numeric(covid$renda_med_pess)
+covid$renda_med_por_domic <- as.numeric(covid$renda_med_por_domic)
+covid$renda_tot_resp <- as.numeric(covid$renda_tot_resp)
+covid$renda_med_resp <- as.numeric(covid$renda_med_resp)
+covid$renda_tot_pess <- as.numeric(covid$renda_tot_pess)
+covid$renda_tot_domic <- as.numeric(covid$renda_tot_domic)
+
+covid$populacao <- as.numeric(covid$populacao)
+
 
 
 # Formação das bases de treino, teste e predição --------------------------
