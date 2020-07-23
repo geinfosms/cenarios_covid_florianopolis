@@ -31,8 +31,9 @@ source("nowcasting/apePredPost.R")
 #Utiliza-se os dados da classificação, ou seja,
 #o número esperado de pessoas com exame positivo ou negativo
 #se todos os pacientes notificados tivessem feito exame.
+source("nowcasting/03-predicao_dos_testes.R")
 
-covid <- read_csv("nowcasting/dados/covid_preditos.csv")
+covid <-cum_base
 covid <- subset(covid, covid$DADOS == "Nowcasted")
 covid <- covid %>% dplyr::select(INICIO_SINTOMAS, MEDIANA_CASOS)
 #Completando a base com dias que não tiveram casos
