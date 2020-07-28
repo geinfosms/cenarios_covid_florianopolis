@@ -147,6 +147,7 @@ demografia <- cbind(idade, demografia)
 demografia$territorio <- row.names(demografia)
 ## Dados de casos suspeitos
 source("nowcasting/01-anonimizando_base.R")
+#covid <- read_csv("nowcasting/dados/covid_anonimizado.csv")
 
 # Transformando base ------------------------------------------------------
 

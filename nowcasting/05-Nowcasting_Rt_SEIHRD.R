@@ -278,8 +278,8 @@ hist(as.numeric(tempo_uti))
 uti.dur.median <- median(tempo_uti) %>% as.numeric()
 
 #Análise do tempo do início do contágio à  internação em uti
-tempo_sintoma_uti <- median(as.Date(srag$DT_ENTUTI) - as.Date(srag$DT_SIN_PRI), na.rm = T)  %>% as.numeric()
-tempo_contagio_uti <- tempo_sintoma_uti + 5 #Os sitomas aparecem, em média, 5 dias após o contágio
+tempo_sintoma_uti <- median((as.Date(srag$DT_ENTUTI) - as.Date(srag$DT_SIN_PRI)), na.rm = T)  %>% as.numeric()
+tempo_infectividade_uti <- median((as.Date(srag$DT_ENTUTI) - (as.Date(srag$DT_SIN_PRI)-3)), na.rm = T)  %>% as.numeric() #A infectividade inicia 3 dias antes do início dos sintomas
 
 #Análise do tempo da internação em uti ao óbito
 tempo_uti_obito <- subset(srag, !is.na(srag$DT_OBITO))
@@ -290,7 +290,7 @@ tempo_uti_recuperacao <- subset(srag, is.na(srag$DT_OBITO))
 tempo_uti_recuperacao <- median(as.Date(tempo_uti_recuperacao$DT_SAIDUTI) - as.Date(tempo_uti_recuperacao$DT_ENTUTI), na.rm = T) %>% as.numeric()
 
 tempos <- data.frame(uti.dur.median = uti.dur.median,
-                     tempo_contagio_uti = tempo_contagio_uti,
+                     tempo_infectividade_uti = tempo_infectividade_uti,
                      tempo_uti_obito = tempo_uti_obito,
                      tempo_uti_recuperacao = tempo_uti_recuperacao)
 write.csv(tempos, "nowcasting/dados/tempos.csv", row.names = F)
@@ -386,6 +386,13 @@ tx_let <- tail(base$CUM_OBITOS,1)[1]/tail(base$CUM_INTERNACAO_UTI,1)[1] #Taxa de
 ##Infectados (transmissores) = i.num = Estimado do nowcasting
 ##Recuperados = r.num = Estimado do nowcasting
 ##Óbitos = d.num = Estimado do nowcasting
+#Parâmetros
+##Número de reprodução efetivo = Rt = Estimado do nowcasting
+##Duração da exposição (não transmissível) = e.dur = 2 dias
+##Duração da infecção (trainsmissível) = i.dur = 12 dias (3 antes do início dos sintomas, 1 do início dos sintomas e 8 após o início dos sintomas)
+#prob1 = Taxa de internação
+##prob2 = Taxa de letalidade entre os internados
+
 S <- tail(base$SUSCETIVEIS,1)[1]
 E <- tail(base$EXPOSTOS,1)[1]
 I <- tail(base$INFECTANTES,1)[1]
@@ -393,9 +400,9 @@ H <- tail(base$LEITOS_UTI,1)[1]
 R <- tail(base$CUM_RECUPERADOS,1)[1]
 D <- tail(base$CUM_OBITOS,1)[1]
 N <- S + E + I +H +  R + D
-ir.dur <- 11
+ir.dur <- 12
 ei.dur <- 2
-ih.dur <- tempo_contagio_uti
+ih.dur <- tempo_infectividade_uti
 hd.dur <- tempo_uti_obito
 hr.dur <- tempo_uti_recuperacao
 prob1 <- tx_hosp
@@ -420,11 +427,8 @@ init <- init.dcm(S = S,
                  hd.flow = 0
 )
 
-#Parâmetros
-##Número de reprodução efetivo = Rt = Estimado do nowcasting
-##Duração da exposição (não transmissível) = e.dur = 3 dias
-##Duração da infecção (trainsmissível) = i.dur = 11 dias
-##Letalidade = cfr
+
+
 param <- param.dcm(Rt = c(tail(res_base$IC025,1),
                           tail(res_base$MEDIA,1),
                           tail(res_base$IC975,1)),
@@ -452,8 +456,8 @@ SEIHRD <- function(t, t0, parms) {
     #Equações diferenciais
     dS <- -alpha*S
     dE <- alpha*S - betha*E
-    dI <- betha*E - (prob1*delta + (etha*(1-prob1)*I))
-    dH <- prob1*delta*I - (1-prob2)*epsilon*H - prob2*mu*H
+    dI <- betha*E - prob1*delta*I - etha*(1-prob1)*I
+    dH <- prob1*delta*I - prob1*(1-prob2)*epsilon*H - prob1*prob2*mu*H
     dR <- (1 - prob1)*etha*I + (1 - prob2)*epsilon*H
     dD <- prob2*mu*H
     
@@ -478,7 +482,7 @@ SEIHRD <- function(t, t0, parms) {
 
 
 #Resolvendo as equações diferenciais
-projecao <- 90
+projecao <- 15
 control <- control.dcm(nsteps = projecao, new.mod = SEIHRD)
 mod <- dcm(param, init, control)
 
