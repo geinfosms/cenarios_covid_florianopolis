@@ -15,7 +15,7 @@
 apeEstim <- function(Iday, sidistr, Lday, Rprior, a, trunctime, idStr){
   
   # Decide to plot
-  wantPlot = 1
+  wantPlot = 0
   
   # No. time points considered
   tday = length(Iday)

@@ -22,18 +22,13 @@ library(magrittr)
 library(RcppRoll)
 
 
-source("nowcasting/apeEstim.R")
-source("nowcasting/apePredPost.R")
-
-
-
 # Nowcasting --------------------------------------------------------------------
 #Utiliza-se os dados da classificação, ou seja,
 #o número esperado de pessoas com exame positivo ou negativo
 #se todos os pacientes notificados tivessem feito exame.
 source("nowcasting/03-predicao_dos_testes.R")
 
-covid <-cum_base
+covid <- cum_base
 covid <- subset(covid, covid$DADOS == "Nowcasted")
 covid <- covid %>% dplyr::select(INICIO_SINTOMAS, MEDIANA_CASOS)
 #Completando a base com dias que não tiveram casos
@@ -64,81 +59,16 @@ covid <- subset(covid, covid$MEDIANA_CASOS >=0)
 #Assim, utilizar-se-á 5 dias como tempo de contato com o vírus ao início dos sintomas. O tempo do início dos sintomas
 #à notificação pode ser inferido dos dados da SMS.
 
-#Importando base para cáculo do tempo entre notificação e início dos sintomas
-not_fname <- paste0('nowcasting/dados/notificacoes_i_',
-                    today(), '.csv')
-tst_fname <- paste0('nowcasting/dados/testes_',
-                    today(), '.csv')
+#################################################
+#Estimativa do número de óbitos, internações e tempos
+#################################################
+source("nowcasting/00-tempos.R")
+source("nowcasting/00_conexoes_com_a_base_obitos_srag.R")
 
-not_query <- read_file('nowcasting/dados/not_query.sql')
-tst_query <- read_file('nowcasting/dados/tst_query.sql')
-
-update_with_query <- function(fname, query) {
-  if (file.exists(fname)) {
-    return(read.csv(fname))
-  } else {
-    drv <- dbDriver('PostgreSQL')
-    con <- dbConnect(drv, dbname = 'florianopolis_saude',
-                     host = 'dbsaudeflorianopolisleitura.celk.com.br',
-                     port = 5432,
-                     user = 'matheus_andrade',
-                     password = 'ma63148F13498')
-    df <- dbGetQuery(con, query)
-    write_csv(df, fname)
-    return(df)
-  }
-}
-
-# Load and tidy
-not_data <- update_with_query(not_fname, not_query)
-not_data$dt_nascimento <- as.Date(not_data$dt_nascimento, format = '%d/%m/%Y')
-not_data$dt_coleta_teste <- as.Date(not_data$dt_coleta_teste, format = '%d/%m/%Y')
-not_data$dt_notificacao <- as.Date(not_data$dt_notificacao, format = '%d/%m/%Y')
-not_data$dt_inicio_sintomas <- as.Date(not_data$dt_inicio_sintomas, format = '%d/%m/%Y')
-not_data$dt_teste_result <- as.Date(not_data$dt_teste_result, format = '%d/%m/%Y')
-not_data$dt_encerramento <- as.Date(not_data$dt_encerramento, format = '%d/%m/%Y')
-
-tst_data <- update_with_query(tst_fname, tst_query) %>%
-  mutate(dt_teste = as.Date(dt_teste))
-
-not_data %<>% filter(mun_residencia == 'FLORIANOPOLIS')
-not_data %<>%
-  mutate(t_sint_not = ifelse((dt_notificacao - dt_inicio_sintomas) < 0, 0, dt_notificacao - dt_inicio_sintomas),
-         t_not_coleta = ifelse(dt_coleta_teste >= dt_inicio_sintomas, dt_coleta_teste - dt_notificacao, NA),
-         fl_testado = ifelse(!is.na(dt_teste_result), 1, 0),
-         tp_teste = ifelse(fl_testado != 1,
-                           NA,
-                           ifelse(teste_tipo_ficha == 'RT-PCR' |
-                                    (is.na(teste_tipo_ficha) & teste_tipo_prontuario == 'PCR'),
-                                  'PCR', 'TR')),
-         t_coleta_resultado = ifelse(tp_teste == 'PCR' & dt_coleta_teste >= dt_inicio_sintomas, dt_teste_result - dt_coleta_teste, NA),
-         t_sint_coleta = ifelse(tp_teste == 'PCR' & dt_coleta_teste >= dt_inicio_sintomas, dt_coleta_teste - dt_inicio_sintomas, NA),
-         fl_encerrado = ifelse(fl_status == "Concluído", 1, 0),
-         fl_monitorado = ifelse(substr(mon_d3, 1, 4) != 'Sem ' &
-                                  substr(mon_d7, 1, 4) != 'Sem ' &
-                                  substr(mon_d10, 1, 4) != 'Sem ' &
-                                  substr(mon_d14, 1, 4) != 'Sem ',
-                                1, 0),
-         sem_epid = epiweek(dt_notificacao),
-         fl_pcr_oportuno = ifelse(t_sint_not <= 7,
-                                  ifelse(tp_teste == 'PCR', 1, 0),
-                                  NA),
-         fl_confirmado = ifelse(class_conf_lab == 'SIM' |
-                                  class_conf_clinep == 'SIM' |
-                                  teste_result_ficha == 'SIM', 1, 0))
-
-
-gd_t_sint_not <- not_data %>%
-  filter(dt_notificacao >= as.Date('2020-01-01') & dt_notificacao < today() &
-           dt_inicio_sintomas >= as.Date('2020-01-01') & dt_inicio_sintomas < today() &
-           dt_coleta_teste >= as.Date('2020-01-01') & dt_coleta_teste < today() &
-           dt_teste_result >= as.Date('2020-01-01') & dt_teste_result < today()) %>%
-  group_by(dt_notificacao) %>%
-  summarise(q20 = quantile(t_sint_not, probs = c(0.20), na.rm = T),
-            median = median(t_sint_not, na.rm = T),
-            q80 = quantile(t_sint_not, probs = c(0.80), na.rm = T))
-
-gd_t_sint_not$q80_smooth <- predict(loess(gd_t_sint_not$q80 ~ as.numeric(gd_t_sint_not$dt_notificacao))) # Percentil 80 suavizado do tempo entre início dos sintomas e notificação
+# srag <- read_csv("nowcasting/dados/srag_anonim.csv")
+# obitos <- read_csv("nowcasting/dados/obitos_anonim.csv")
+# gd_t_sint_not<- read_csv("nowcasting/dados/gd_t_sint_not.csv")
+# leitos_uti <- read_csv("nowcasting/dados/leitos_uti.csv")
 
 #Truncandos os dados da contaminação à notificação
 tempo_contaminacao_inicio_sintomas <- 5
@@ -181,7 +111,7 @@ write.csv(covid,"nowcasting/dados/covid_nowcasted.csv", row.names = F)
 expostos <- covid
 expostos$DATA <- (expostos$INICIO_SINTOMAS - 5) %>% as.character()
 expostos$INICIO_SINTOMAS <- NULL
-expostos$EXPOSTOS <- roll_sum(covid$MEDIANA_CASOS,2, fill = 0, align = "right") #menos de 3 dias do início dos sintomas
+expostos$EXPOSTOS <- roll_sum(expostos$MEDIANA_CASOS,2, fill = 0, align = "right") #menos de 3 dias do início dos sintomas
 expostos_proj <- forecast(auto.arima(expostos$EXPOSTOS),
                           h=((Sys.Date()-1)-max(as.Date(expostos$DATA))))$mean[1:((Sys.Date()-1)-max(as.Date(expostos$DATA)))] %>%
   as.data.frame()
@@ -208,7 +138,7 @@ names(expostos)[1] <- "CASOS_NOVOS"
 infectantes <- covid
 infectantes$DATA <- (infectantes$INICIO_SINTOMAS - 3) %>% as.character()
 infectantes$INICIO_SINTOMAS <- NULL
-infectantes$INFECTANTES <- roll_sum(covid$MEDIANA_CASOS,11, fill = 0, align = "right") #menos de 3 dias do início dos sintomas
+infectantes$INFECTANTES <- roll_sum(infectantes$MEDIANA_CASOS,11, fill = 0, align = "right") 
 infectantes <- infectantes %>% dplyr::select(DATA, INFECTANTES)
 infectantes_proj <- forecast(auto.arima(infectantes$INFECTANTES),
                              h=((Sys.Date()-1)-max(as.Date(infectantes$DATA))))$mean[1:((Sys.Date()-1)-max(as.Date(infectantes$DATA)))] %>%
@@ -218,15 +148,7 @@ infectantes_proj$DATA <- c((max(as.Date(infectantes$DATA))+1):(Sys.Date()-1)) %>
 names(infectantes_proj) <- c("INFECTANTES", "DATA")
 infectantes <- rbind(infectantes, infectantes_proj) %>% as.data.frame()
 
-#################################################
-#Estimativa do número de óbitos
-#################################################
-source("nowcasting/00_conexoes_com_a_base_obitos_srag.R")
-obitos_raw <- obitos
-obitos <- data.frame(DATA = obitos$DT_OBITO) %>% na.omit()
-obitos$OBITOS <- 1
-obitos <- obitos %>% group_by(DATA) %>% summarise(OBITOS = sum(OBITOS, na.rm = T))
-obitos$DATA <- as.Date(obitos$DATA)
+
 
 #################################################
 #Estimativa do número de recuperados
@@ -250,8 +172,9 @@ base <- merge(base, infectantes, by = "DATA", all = T)
 ##Cumulativos e suceptíveis
 base$DATA <- as.Date(base$DATA, "%Y-%m-%d")
 base <- base[order(base$DATA),]
-base <- na.omit(base)
+base[is.na(base$RECUPERADOS), names(base) == "RECUPERADOS"] <- 0
 base$CUM_RECUPERADOS <- cumsum(base$RECUPERADOS)
+base[is.na(base$OBITOS), names(base) == "OBITOS"] <- 0
 base$CUM_OBITOS <- cumsum(base$OBITOS)
 
 #################################################
@@ -261,68 +184,18 @@ POP <- 500973
 base$SUSCETIVEIS <- POP - base$CUM_RECUPERADOS - base$CUM_OBITOS - base$EXPOSTOS - base$INFECTANTES
 
 #################################################
-#Estimativa de SRAG por COVID-19
+#merge
 #################################################
-srag$INTERNACAO_UTI <- 1
-srag <- subset(srag, srag$CLASSI_FIN == 5) #selecionando srag por covid
-srag <- subset(srag, srag$CO_MUN_RES == 420540) #selecionando srag por covid
-srag <- merge(srag, obitos_raw, by.x = "NM_PACIENT", by.y = "NOME", all = T)
-srag <- as.data.frame(srag)
-
-#Análise do tempo total de internação em uti
-tempo_uti <- subset(srag, !is.na(srag$DT_ENTUTI))#Usando dados de pacientes que já tiveram alta da uti
-tempo_uti <- tempo_uti %>% dplyr::select(DT_ENTUTI, DT_SAIDUTI,INTERNACAO_UTI)
-tempo_uti[is.na(tempo_uti$DT_SAIDUTI), names(tempo_uti) == "DT_SAIDUTI"] <- Sys.Date()-1
-tempo_uti <- as.Date(tempo_uti$DT_SAIDUTI, format = "%d/%m/%Y")  - as.Date(tempo_uti$DT_ENTUTI, format = "%d/%m/%Y")
-hist(as.numeric(tempo_uti))
-uti.dur.median <- median(tempo_uti) %>% as.numeric()
-
-#Análise do tempo do início do contágio à  internação em uti
-tempo_sintoma_uti <- median((as.Date(srag$DT_ENTUTI) - as.Date(srag$DT_SIN_PRI)), na.rm = T)  %>% as.numeric()
-tempo_infectividade_uti <- median((as.Date(srag$DT_ENTUTI) - (as.Date(srag$DT_SIN_PRI)-3)), na.rm = T)  %>% as.numeric() #A infectividade inicia 3 dias antes do início dos sintomas
-
-#Análise do tempo da internação em uti ao óbito
-tempo_uti_obito <- subset(srag, !is.na(srag$DT_OBITO))
-tempo_uti_obito <- median(as.Date(tempo_uti_obito$DT_OBITO) - as.Date(tempo_uti_obito$DT_ENTUTI), na.rm = T)  %>% as.numeric()
-
-#Análise do tempo da internação em uti à recuperação
-tempo_uti_recuperacao <- subset(srag, is.na(srag$DT_OBITO))
-tempo_uti_recuperacao <- median(as.Date(tempo_uti_recuperacao$DT_SAIDUTI) - as.Date(tempo_uti_recuperacao$DT_ENTUTI), na.rm = T) %>% as.numeric()
-
-tempos <- data.frame(uti.dur.median = uti.dur.median,
-                     tempo_infectividade_uti = tempo_infectividade_uti,
-                     tempo_uti_obito = tempo_uti_obito,
-                     tempo_uti_recuperacao = tempo_uti_recuperacao)
-write.csv(tempos, "nowcasting/dados/tempos.csv", row.names = F)
-
-
-#Cálculo da ocupacão de leitos de uti
-srag <- srag %>% dplyr::select(DT_ENTUTI, DT_SAIDUTI,INTERNACAO_UTI)
-srag$DT_ENTUTI <- as.Date(srag$DT_ENTUTI, format = "%d/%m/%Y")
-srag$DT_SAIDUTI <- as.Date(srag$DT_SAIDUTI)
-srag <- srag[!is.na(srag$DT_ENTUTI),]
-srag[is.na(srag$DT_SAIDUTI), names(srag) == "DT_SAIDUTI"] <- (Sys.Date()-1)
-LEITOS_UTI <- list()
-for(i in 1:nrow(srag)){
-  LEITOS_UTI[[i]] <- seq.Date(from = srag$DT_ENTUTI[i], to = srag$DT_SAIDUTI[i],by = 1)
-}
-LEITOS_UTI <- as.Date(unlist(LEITOS_UTI), origin = "1970-01-01")
-leitos_uti <- data.frame(DATA = LEITOS_UTI,
-                         LEITOS_UTI = 1)
-leitos_uti <- leitos_uti %>%
-  group_by(DATA) %>%
-  summarise(LEITOS_UTI = sum(LEITOS_UTI, na.rm = T))
-
-srag <- srag %>%
-  group_by(DT_ENTUTI) %>%
-  summarise(INTERNACAO_UTI = sum(INTERNACAO_UTI, na.rm = T))
 #merge dos dados de ocupação de leitos e número de intenação com os outros dados
 base <- merge(base, leitos_uti, by = "DATA", all = T)
 base <- merge(base, srag, by.x = "DATA", by.y = "DT_ENTUTI", all = T)
 base[is.na(base$LEITOS_UTI), names(base) == "LEITOS_UTI"] <- 0
 base[is.na(base$INTERNACAO_UTI), names(base) == "INTERNACAO_UTI"] <- 0
 base$CUM_INTERNACAO_UTI <- cumsum(base$INTERNACAO_UTI)
-
+base[is.na(base$RECUPERADOS_UTI), names(base) == "RECUPERADOS_UTI"] <- 0
+base$CUM_RECUPERADOS_UTI <- cumsum(base$RECUPERADOS_UTI)
+base <- subset(base, base$DATA < Sys.Date())
+base <- na.omit(base)
 
 write.csv(base, "nowcasting/dados/base_nowcasting.csv", row.names = F)
 
@@ -330,6 +203,9 @@ ggplot(base, aes(DATA, LEITOS_UTI))+
   geom_line()
 
 # Estimando o Rt ----------------------------------------------------------
+source("nowcasting/apeEstim.R")
+source("nowcasting/apePredPost.R")
+
 incidencia <- base
 incidencia <- subset(incidencia, incidencia$DATA > c(Sys.Date()-92)) #Utilizando dados dos últimos trës meses
 incidencia_proj <- incidencia %>% dplyr::select(DATA, CASOS_NOVOS)
@@ -348,7 +224,7 @@ Rprior = c(1, 5); a = 0.025 #Confidence interval level
 Lcovid[is.na(Lcovid)] = 0# <------ important
 
 #Best estimates and prediction
-Rmodcovid = apeEstim(Icovid, gencovid, Lcovid, Rprior, a, trunc, "covid")
+Rmodcovid <- apeEstim(Icovid, gencovid, Lcovid, Rprior, a, trunc, "covid")
 Rcovid <- Rmodcovid[[2]][[4]]
 RcovidCI_025 <- Rmodcovid[[2]][[5]][1,]
 RcovidCI_975 <- Rmodcovid[[2]][[5]][2,]
@@ -373,12 +249,6 @@ ggplot(res_melt, aes(DATA, value, group = variable, color = variable))+
 
 
 # Forecast do número de casos e dos óbitos --------------------------------
-base$TOTAL <- base$EXPOSTOS + base$INFECTANTES + base$CUM_RECUPERADOS + base$CUM_OBITOS
-base$CUM_CASOS_NOVOS <- cumsum(base$CASOS_NOVOS)
-tx_hosp <- tail(base$CUM_INTERNACAO_UTI,1)[1]/tail(base$TOTAL,1) #Taxa de letalidade
-tx_let <- tail(base$CUM_OBITOS,1)[1]/tail(base$CUM_INTERNACAO_UTI,1)[1] #Taxa de letalidade entre os internados em UTI
-
-
 #Estados Iniciais
 #Estados iniciais
 ##Suscetiveis = s.num = População - Expostos - Infectados - Recuperados - Óbitos
@@ -392,6 +262,11 @@ tx_let <- tail(base$CUM_OBITOS,1)[1]/tail(base$CUM_INTERNACAO_UTI,1)[1] #Taxa de
 ##Duração da infecção (trainsmissível) = i.dur = 12 dias (3 antes do início dos sintomas, 1 do início dos sintomas e 8 após o início dos sintomas)
 #prob1 = Taxa de internação
 ##prob2 = Taxa de letalidade entre os internados
+tempos <- read_csv("nowcasting/dados/tempos.csv")
+uti.dur.mean <- tempos$uti.dur.mean
+tempo_infectividade_uti <- tempos$tempo_infectividade_uti
+tempo_uti_obito <- tempos$tempo_uti_obito
+tempo_uti_recuperacao <- tempos$tempo_uti_recuperacao
 
 S <- tail(base$SUSCETIVEIS,1)[1]
 E <- tail(base$EXPOSTOS,1)[1]
@@ -405,13 +280,20 @@ ei.dur <- 2
 ih.dur <- tempo_infectividade_uti
 hd.dur <- tempo_uti_obito
 hr.dur <- tempo_uti_recuperacao
-prob1 <- tx_hosp
-prob2 <- tx_let
 etha <- 1/ir.dur
 betha <- 1/ei.dur
 delta <- 1/ih.dur
 mu <- 1/hd.dur
 epsilon <- 1/hr.dur
+
+#Estimativa das probabilidade para o modelo
+base$TOTAL <- base$EXPOSTOS + base$INFECTANTES + base$CUM_RECUPERADOS + base$CUM_OBITOS
+base$CUM_CASOS_NOVOS <- cumsum(base$CASOS_NOVOS)
+defasagem_uti_recuperacao <- nrow(base) - (ei.dur + ih.dur + hr.dur) #Lag de tempo para calcular a probabilidade da pessoa entrar na UTI e se recuperar
+defasagem_uti_obito <- nrow(base) - (ei.dur + ih.dur + hd.dur) #Lag de tempo para calcular a probabilidade da pessoa entrar na UTI e falecer
+prob1 <- tail(base$CUM_RECUPERADOS_UTI,1)[1]/base[,names(base) == "TOTAL"][defasagem_uti_recuperacao] #Taxa de hospitalizados recuperados de UTI - denominador usando a defasagem
+prob2 <- tail(base$CUM_OBITOS,1)[1]/base[,names(base) == "TOTAL"][defasagem_uti_obito] #Taxa de letalidade entre os internados em UTI - denominador usando a defasagem
+prob <- prob1 + prob2
 
 init <- init.dcm(S = S,
                  E = E,
@@ -438,7 +320,8 @@ param <- param.dcm(Rt = c(tail(res_base$IC025,1),
                    mu = 1/hd.dur,
                    epsilon = 1/hr.dur,
                    prob1 = prob1,
-                   prob2 = prob2
+                   prob2 = prob2,
+                   prob = prob
 )
 
 
@@ -448,27 +331,24 @@ SEIHRD <- function(t, t0, parms) {
     
     N <- S + E + I + H +  R + D
     
-    
-    EC <- Rt * etha
-    alpha <- EC * I/N
-    
+    alpha <- etha * Rt * I/N
     
     #Equações diferenciais
     dS <- -alpha*S
     dE <- alpha*S - betha*E
-    dI <- betha*E - prob1*delta*I - etha*(1-prob1)*I
-    dH <- prob1*delta*I - prob1*(1-prob2)*epsilon*H - prob1*prob2*mu*H
-    dR <- (1 - prob1)*etha*I + (1 - prob2)*epsilon*H
-    dD <- prob2*mu*H
+    dI <- betha*E - prob*delta*I - (1-prob)*etha*I
+    dH <- prob*delta*I - (prob2/prob)*mu*H - (prob1/prob)*epsilon*H
+    dR <- (1 - prob)*etha*I + (prob1/prob)*epsilon*H
+    dD <- (prob2/prob)*mu*H
     
     #Outputs
     list(c(dS, dE, dI, dH, dR, dD,
            se.flow = alpha * S,
            ei.flow = betha * E,
-           ir.flow = (1 - prob1)*etha*I,
+           ir.flow = (1 - prob)*etha*I,
            ih.flow = prob1*delta*I,
-           hr.flow = (1-prob1)*etha*I,
-           hd.flow = prob2*mu*H),
+           hr.flow = (prob1/prob)*epsilon*H,
+           hd.flow = (prob2/prob)*mu*H),
          num = N,
          s.prev = S / N,
          e.prev = E / N,
@@ -482,7 +362,7 @@ SEIHRD <- function(t, t0, parms) {
 
 
 #Resolvendo as equações diferenciais
-projecao <- 15
+projecao <- 21
 control <- control.dcm(nsteps = projecao, new.mod = SEIHRD)
 mod <- dcm(param, init, control)
 
@@ -492,12 +372,12 @@ mod <- dcm(param, init, control)
 #Cenário Rt 1 - IC2.5
 ######################################
 resultados_cenario_1 <- data.frame(SUSCETIVEIS = mod$epi$S$run1,
-                             EXPOSTOS = mod$epi$E$run1,
-                             INFECTANTES = mod$epi$I$run1,
-                             LEITOS_UTI = mod$epi$H$run1,
-                             CUM_RECUPERADOS = mod$epi$R$run1,
-                             CUM_OBITOS = mod$epi$D$run1
-                             )
+                                   EXPOSTOS = mod$epi$E$run1,
+                                   INFECTANTES = mod$epi$I$run1,
+                                   LEITOS_UTI = mod$epi$H$run1,
+                                   CUM_RECUPERADOS = mod$epi$R$run1,
+                                   CUM_OBITOS = mod$epi$D$run1
+)
 
 resultados_cenario_1$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
 resultados_cenario_1$DATA  <- as.Date(resultados_cenario_1$DATA , origin = "1970-01-01")
@@ -509,11 +389,11 @@ names(resultados_cenario_1) <-c("DATA", "SUSCETIVEIS_CENARIO_1", "CUM_RECUPERADO
 #Cenário 2 - Rt Mediana
 ######################################
 resultados_cenario_2 <- data.frame(SUSCETIVEIS = mod$epi$S$run2,
-                         EXPOSTOS = mod$epi$E$run2,
-                         INFECTANTES = mod$epi$I$run2,
-                         LEITOS_UTI = mod$epi$H$run2,
-                         CUM_RECUPERADOS = mod$epi$R$run2,
-                         CUM_OBITOS = mod$epi$D$run2)
+                                   EXPOSTOS = mod$epi$E$run2,
+                                   INFECTANTES = mod$epi$I$run2,
+                                   LEITOS_UTI = mod$epi$H$run2,
+                                   CUM_RECUPERADOS = mod$epi$R$run2,
+                                   CUM_OBITOS = mod$epi$D$run2)
 
 resultados_cenario_2$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
 resultados_cenario_2$DATA  <- as.Date(resultados_cenario_2$DATA , origin = "1970-01-01")
@@ -525,11 +405,11 @@ names(resultados_cenario_2) <-c("DATA", "SUSCETIVEIS_CENARIO_2", "CUM_RECUPERADO
 #Cenário 3 - Rt IC975
 ######################################
 resultados_cenario_3 <- data.frame(SUSCETIVEIS = mod$epi$S$run3,
-                             EXPOSTOS = mod$epi$E$run3,
-                             INFECTANTES = mod$epi$I$run3,
-                             LEITOS_UTI = mod$epi$H$run3,
-                             CUM_RECUPERADOS = mod$epi$R$run3,
-                             CUM_OBITOS = mod$epi$D$run3)
+                                   EXPOSTOS = mod$epi$E$run3,
+                                   INFECTANTES = mod$epi$I$run3,
+                                   LEITOS_UTI = mod$epi$H$run3,
+                                   CUM_RECUPERADOS = mod$epi$R$run3,
+                                   CUM_OBITOS = mod$epi$D$run3)
 
 resultados_cenario_3$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
 resultados_cenario_3$DATA  <- as.Date(resultados_cenario_3$DATA , origin = "1970-01-01")
@@ -542,8 +422,8 @@ resultados <- merge(resultados_cenario_1, resultados_cenario_2, by= "DATA", all 
 resultados <- merge(resultados_cenario_3, resultados, by= "DATA", all = T)
 
 
-write.csv(resultados, "nowcasting/dados/resulados.csv", row.names = F)
-resultados$DATA <- as.Date(resultados$DATA, origin = "1970-01-01")
+write.csv(resultados, "nowcasting/dados/resultados.csv", row.names = F)
+#resultados$DATA <- as.Date(resultados$DATA, origin = "1970-01-01")
 write_sheet(id_covid,"resultados", data = resultados)
 
 
@@ -555,5 +435,3 @@ resultados_melt <- melt(resultados_melt, id.vars = "DATA")
 ggplot(resultados_melt, aes(DATA, value, color = variable))+
   geom_line()+
   theme_bw()
-
-
