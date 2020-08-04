@@ -80,7 +80,7 @@ estimativa <- function(train_test_base, predic_base, seed){
 	## Estratégia de hiperparametrização - random search
 	ctrl <- makeTuneControlRandom(maxit = 2L)
 	## Estratégia de ressampling do inner loop - validação cruzada com estratificação dos resultados balanceados entre as folds
-	folds <- 5
+	folds <- 2
 	inner <- makeResampleDesc("CV", iter = folds, stratify = TRUE)
 	#measures https://mlr.mlr-org.com/articles/tutorial/measures.html
 	## learner ajustados para filtragem e tuning

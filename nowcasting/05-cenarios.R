@@ -69,6 +69,8 @@ source("nowcasting/00_conexoes_com_a_base_obitos_srag.R")
 # obitos <- read_csv("nowcasting/dados/obitos_anonim.csv")
 # gd_t_sint_not<- read_csv("nowcasting/dados/gd_t_sint_not.csv")
 # leitos_uti <- read_csv("nowcasting/dados/leitos_uti.csv")
+inter_recup <- read_csv("nowcasting/dados/inter_recup.csv")
+
 
 #Truncandos os dados da contaminação à notificação
 tempo_contaminacao_inicio_sintomas <- 5
@@ -188,7 +190,7 @@ base$SUSCETIVEIS <- POP - base$CUM_RECUPERADOS - base$CUM_OBITOS - base$EXPOSTOS
 #################################################
 #merge dos dados de ocupação de leitos e número de intenação com os outros dados
 base <- merge(base, leitos_uti, by = "DATA", all = T)
-base <- merge(base, srag, by.x = "DATA", by.y = "DT_ENTUTI", all = T)
+base <- merge(base, inter_recup, by.x = "DATA", by.y = "DT_ENTUTI", all = T)
 base[is.na(base$LEITOS_UTI), names(base) == "LEITOS_UTI"] <- 0
 base[is.na(base$INTERNACAO_UTI), names(base) == "INTERNACAO_UTI"] <- 0
 base$CUM_INTERNACAO_UTI <- cumsum(base$INTERNACAO_UTI)
@@ -379,7 +381,8 @@ resultados_cenario_1 <- data.frame(SUSCETIVEIS = mod$epi$S$run1,
 				   CUM_OBITOS = mod$epi$D$run1
 )
 
-resultados_cenario_1$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
+resultados_cenario_1 <- resultados_cenario_1[-1,]
+resultados_cenario_1$DATA <- c((Sys.Date()):(Sys.Date()+projecao-2))
 resultados_cenario_1$DATA  <- as.Date(resultados_cenario_1$DATA , origin = "1970-01-01")
 base_select <- base %>% dplyr::select(DATA,SUSCETIVEIS, CUM_RECUPERADOS, EXPOSTOS, INFECTANTES, CUM_OBITOS, LEITOS_UTI)
 resultados_cenario_1 <- rbind(base_select, resultados_cenario_1)
@@ -395,7 +398,8 @@ resultados_cenario_2 <- data.frame(SUSCETIVEIS = mod$epi$S$run2,
 				   CUM_RECUPERADOS = mod$epi$R$run2,
 				   CUM_OBITOS = mod$epi$D$run2)
 
-resultados_cenario_2$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
+resultados_cenario_2 <- resultados_cenario_2[-1,]
+resultados_cenario_2$DATA <- c((Sys.Date()):(Sys.Date()+projecao-2))
 resultados_cenario_2$DATA  <- as.Date(resultados_cenario_2$DATA , origin = "1970-01-01")
 base_select <- base %>% dplyr::select(DATA,SUSCETIVEIS, CUM_RECUPERADOS, EXPOSTOS, INFECTANTES, CUM_OBITOS, LEITOS_UTI)
 resultados_cenario_2 <- rbind(base_select, resultados_cenario_2)
@@ -411,7 +415,8 @@ resultados_cenario_3 <- data.frame(SUSCETIVEIS = mod$epi$S$run3,
 				   CUM_RECUPERADOS = mod$epi$R$run3,
 				   CUM_OBITOS = mod$epi$D$run3)
 
-resultados_cenario_3$DATA <- c((Sys.Date()):(Sys.Date()+projecao-1))
+resultados_cenario_3 <- resultados_cenario_3[-1,]
+resultados_cenario_3$DATA <- c((Sys.Date()):(Sys.Date()+projecao-2))
 resultados_cenario_3$DATA  <- as.Date(resultados_cenario_3$DATA , origin = "1970-01-01")
 base_select <- base %>% dplyr::select(DATA,SUSCETIVEIS, CUM_RECUPERADOS, EXPOSTOS, INFECTANTES, CUM_OBITOS, LEITOS_UTI)
 resultados_cenario_3 <- rbind(base_select, resultados_cenario_3)
