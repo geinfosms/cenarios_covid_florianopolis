@@ -31,7 +31,7 @@ Para a elaboração de cenários, realiza-se, inicialmente, o nowcasting do núm
 7. 	Lai S, Ruktanonchai NW, Zhou L, et al. Effect of non-pharmaceutical interventions to contain COVID-19 in China. Nature. Nature Publishing Group; 2020 May;1–7. 
 8. 	HHS, CDC. Implementation of Mitigation Strategies for Communities with Local COVID-19 Transmission. 
 9. 	Thunström L, Newbold SC, Finnoff D, Ashworth M, Shogren JF. The Benefits and Costs of Using Social Distancing to Flatten the Curve for COVID-19. J Benefit-Cost Anal. Cambridge University Press (CUP); 2020 Apr 28;1–17
-10. 	Glover RE, Schalkwyk MC van, Akl EA, et al. A framework for identifying and mitigating the equity harms of COVID-19 policy interventions. J Clin Epidemiol. Elsevier BV; 2020 Jun
+10. 	Glover RE, Schalkwyk MC van, Akl EA, et al. A framework for identifying and mitigating the equity harms of COVID-19 policy interventions. J Clin Epidemiol
 11. 	Lewnard JA, Lo NC. Scientific and ethical basis for social-distancing interventions against COVID-19 [Internet]. Lancet Infect. Dis. Lancet Publishing Group; 2020 [cited 2020 Jul 18]. p. 631. Available from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7118670/
 12. 	WHO WHO. Coronavirus disease (COVID-19) pandemic [Internet]. 2020 [cited 2020 Jun 29]. Available from: https://www.who.int/emergencies/diseases/novel-coronavirus-2019?gclid=Cj0KCQjwoub3BRC6ARIsABGhnybzd7kDQxOQ-d5DH4OGL9618VaGon1x74u2OP0ujUw8vngt-huulrUaAsrqEALw_wcB
 13. 	IHME COVID-19 health service utilization forecasting T. Forecasting COVID-19 impact on hospital bed-days, ICU-days, ventilator-days and deaths by US state in the next 4 months. medRxiv. Cold Spring Harbor Laboratory Press; 2020 Mar;114:2020.03.27.20043752
