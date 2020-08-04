@@ -236,9 +236,9 @@ res_melt <- melt(res_base, id.vars = "DATA")
 res_melt$DATA <- as.Date(res_melt$DATA, origin = "1970-01-01")
 write.csv(res_melt, "nowcasting/dados/rt.csv",row.names = F)
 res_base$DATA <- as.Date(res_base$DATA, origin = "1970-01-01")
-res_base_5dias <- subset(res_base, res_base$DATA > Sys.Date() -6)
-write_sheet(id_covid,"reff", data = res_base_5dias)
-write.csv(res_base_5dias, "nowcasting/dados/res_base_5dias.csv", row.names = F)
+res_base_14dias <- subset(res_base, res_base$DATA > Sys.Date() -15)
+write_sheet(id_covid,"reff", data = res_base_14dias)
+write.csv(res_base_14dias, "nowcasting/dados/res_base_14dias.csv", row.names = F)
 
 
 ggplot(res_melt, aes(DATA, value, group = variable, color = variable))+

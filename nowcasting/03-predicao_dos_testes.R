@@ -14,6 +14,7 @@ library(doParallel)
 library(parallelMap)
 library(tigerstats)
 library(matrixStats)
+library(erer)
 
 # Importanto bases ---------------------------------------------------------------
 ## Dados de suspeitos 
@@ -146,6 +147,13 @@ estimativa <- function(train_test_base, predic_base, seed){
 	cum_train <- subset(cum_train, cum_train$RESULTADO == "confirmado")
 	cum_train$NUMERO <- 1
 	cum_train$INICIO_SINTOMAS <- as.Date(cum_train$INICIO_SINTOMAS, format = "%Y-%m-%d")
+	
+	cum_train_territorio <- cum_train
+	cum_train_territorio$TERRITORIO <- as.character(cum_train_territorio$TERRITORIO)
+	cum_train_territorio <- cum_train_territorio %>%
+		group_by(INICIO_SINTOMAS, TERRITORIO) %>%
+		summarise(CASOS = sum(NUMERO, na.rm = T))
+	
 	cum_train <- cum_train %>%
 		group_by(INICIO_SINTOMAS) %>%
 		summarise(CASOS = sum(NUMERO, na.rm = T))
@@ -160,6 +168,14 @@ estimativa <- function(train_test_base, predic_base, seed){
 	cum_base <- subset(base_final, base_final$RESULTADO == "confirmado")
 	cum_base$NUMERO <- 1
 	cum_base$INICIO_SINTOMAS <- as.Date(cum_base$INICIO_SINTOMAS, format = "%Y-%m-%d")
+	
+	cum_base_territorio <- cum_base
+	cum_base_territorio$TERRITORIO <- as.character(cum_base_territorio$TERRITORIO)
+	cum_base_territorio <- cum_base_territorio %>%
+		group_by(INICIO_SINTOMAS, TERRITORIO) %>%
+		summarise(CASOS = sum(NUMERO, na.rm = T))
+	cum_base_territorio <- rbind(cum_train_territorio,cum_base_territorio) %>% as.data.frame()
+	
 	cum_base <- cum_base %>%
 		group_by(INICIO_SINTOMAS) %>%
 		summarise(CASOS = sum(NUMERO, na.rm = T))
@@ -167,7 +183,7 @@ estimativa <- function(train_test_base, predic_base, seed){
 	cum_base$DADOS <- "Nowcasted" #Dados Nowcasted = Measured + Predicted
 	cum_base <- rbind(cum_train, cum_base) %>% as.data.frame()
 	
-	return(list(cum_base, result_train, result_valid, result_test))
+	return(list(cum_base, result_train, result_valid, result_test, cum_base_territorio))
 
 }
 
@@ -178,10 +194,12 @@ for(i in 1:n_boot){
 	boot_base[[i]] <- estimativa(train_test_base, predic_base, 1)
 }
 
+
 cum_base <- list()
 for(i in 1:n_boot){
 	cum_base[[i]] <- boot_base[[i]][[1]][c(1,2,4)] %>% as.data.frame()	
 }
+
 
 cum_base <- Reduce(function(x,y) merge(x , y, by = c("INICIO_SINTOMAS", "DADOS"), all = T), cum_base) %>% as.data.frame()
 cum_base_mat <- as.matrix(cum_base[,c(3:ncol(cum_base))])
@@ -307,13 +325,31 @@ incidencia_periodo <- incidencia_periodo %>%
 		  II_975 = sum(II_975, na.rm = T))
 
 
+# Exportando base ---------------------------------------------------------
 write.csv(incidencia_total, "nowcasting/dados/incidencia_total.csv", row.names = F, fileEncoding = "UTF-8")
 write.csv(incidencia_periodo, "nowcasting/dados/incidencia_periodo.csv", row.names = F , fileEncoding = "UTF-8")
 
-
-# Exportando base ---------------------------------------------------------
 write.csv(cum_base, "nowcasting/dados/covid_preditos.csv", row.names = F, fileEncoding = "UTF-8")
 write.csv(pred_base, "nowcasting/dados/cum_covid_preditos", row.names = F, fileEncoding = "UTF-8")
+
+
+casos_por_territorio <- list()
+for(i in 1:n_boot){
+	casos_por_territorio[[i]] <- boot_base[[i]][[5]][c(1,2,3)] %>% as.data.frame()	
+}
+
+casos_por_territorio <- Reduce(function(x,y) merge(x , y, by = c("INICIO_SINTOMAS", "TERRITORIO"), all = T), casos_por_territorio) %>% as.data.frame()
+casos_por_territorio_mat <- as.matrix(casos_por_territorio[,c(4:ncol(casos_por_territorio))])
+casos_por_territorio_mat[is.na(casos_por_territorio_mat)] <- 0 
+casos_por_territorio$MEDIANA_CASOS <- rowMedians(casos_por_territorio_mat, na.rm = T)
+casos_por_territorio <- casos_por_territorio %>% dplyr::select(INICIO_SINTOMAS, TERRITORIO, MEDIANA_CASOS)
+casos_por_territorio <- casos_por_territorio %>%
+	group_by(INICIO_SINTOMAS, TERRITORIO) %>%
+	summarise(CASOS = sum(MEDIANA_CASOS, na.rm = T))
+
+
+
+write.csv(casos_por_territorio,"nowcasting/dados/casos_por_territorio.csv", row.names = F, fileEncoding = "UTF-8")
 
 #Parando paralelização
 parallelStop()
