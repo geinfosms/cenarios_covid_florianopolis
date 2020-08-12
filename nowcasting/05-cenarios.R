@@ -26,7 +26,7 @@ library(RcppRoll)
 #Utiliza-se os dados da classificação, ou seja,
 #o número esperado de pessoas com exame positivo ou negativo
 #se todos os pacientes notificados tivessem feito exame.
-source("nowcasting/03-predicao_dos_testes.R")
+source("nowcasting/04-plot_classificacao.R")
 
 covid <- cum_base
 covid <- subset(covid, covid$DADOS == "Nowcasted")
@@ -36,6 +36,8 @@ calendario <- data.frame("INICIO_SINTOMAS" = c(as.Date("2020-02-01"):(Sys.Date()
 calendario$INICIO_SINTOMAS <- as.Date(calendario$INICIO_SINTOMAS, origin = "1970-01-01")
 covid <- merge(covid, calendario, by = "INICIO_SINTOMAS", all = T)
 covid[is.na(covid)] <- 0
+
+write.csv(covid, "base_esp.csv", row.names = F)
 
 covid$MEDIANA_CASOS <- loess(covid$MEDIANA_CASOS ~ as.numeric(covid$INICIO_SINTOMAS))$fitted
 covid <- subset(covid, covid$MEDIANA_CASOS >=0)
@@ -63,13 +65,14 @@ covid <- subset(covid, covid$MEDIANA_CASOS >=0)
 #Estimativa do número de óbitos, internações e tempos
 #################################################
 source("nowcasting/00-tempos.R")
-source("nowcasting/00_conexoes_com_a_base_obitos_srag.R")
+#gd_t_sint_not<- read_csv("nowcasting/dados/gd_t_sint_not.csv")
 
-# srag <- read_csv("nowcasting/dados/srag_anonim.csv")
-# obitos <- read_csv("nowcasting/dados/obitos_anonim.csv")
-# gd_t_sint_not<- read_csv("nowcasting/dados/gd_t_sint_not.csv")
-# leitos_uti <- read_csv("nowcasting/dados/leitos_uti.csv")
+#source("nowcasting/00_conexoes_com_a_base_obitos_srag.R")
+obitos <- read_csv("nowcasting/dados/obitos_anonim.csv")
+leitos_uti <- read_csv("nowcasting/dados/leitos_uti.csv")
 inter_recup <- read_csv("nowcasting/dados/inter_recup.csv")
+int_obit_anonim <- read_csv("nowcasting/dados/int_obit_anonim.csv")
+
 
 
 #Truncandos os dados da contaminação à notificação
@@ -189,17 +192,20 @@ base$SUSCETIVEIS <- POP - base$CUM_RECUPERADOS - base$CUM_OBITOS - base$EXPOSTOS
 #merge
 #################################################
 #merge dos dados de ocupação de leitos e número de intenação com os outros dados
+base$DATA <- as.Date(base$DATA)
+leitos_uti$DATA <- as.Date(leitos_uti$DATA) 
 base <- merge(base, leitos_uti, by = "DATA", all = T)
+inter_recup$DT_ENTUTI <- as.Date(inter_recup$DT_ENTUTI)
 base <- merge(base, inter_recup, by.x = "DATA", by.y = "DT_ENTUTI", all = T)
+base <- subset(base, base$DATA < Sys.Date())
+
 base[is.na(base$LEITOS_UTI), names(base) == "LEITOS_UTI"] <- 0
 base[is.na(base$INTERNACAO_UTI), names(base) == "INTERNACAO_UTI"] <- 0
 base$CUM_INTERNACAO_UTI <- cumsum(base$INTERNACAO_UTI)
 base[is.na(base$RECUPERADOS_UTI), names(base) == "RECUPERADOS_UTI"] <- 0
 base$CUM_RECUPERADOS_UTI <- cumsum(base$RECUPERADOS_UTI)
-base <- subset(base, base$DATA < Sys.Date())
 base <- na.omit(base)
-
-write.csv(base, "nowcasting/dados/base_nowcasting.csv", row.names = F)
+base <- unique(base)
 
 ggplot(base, aes(DATA, LEITOS_UTI))+
 	geom_line()
@@ -291,8 +297,8 @@ epsilon <- 1/hr.dur
 #Estimativa das probabilidade para o modelo
 base$TOTAL <- base$EXPOSTOS + base$INFECTANTES + base$CUM_RECUPERADOS + base$CUM_OBITOS
 base$CUM_CASOS_NOVOS <- cumsum(base$CASOS_NOVOS)
-defasagem_uti_recuperacao <- nrow(base) - (ei.dur + ih.dur + hr.dur) #Lag de tempo para calcular a probabilidade da pessoa entrar na UTI e se recuperar
-defasagem_uti_obito <- nrow(base) - (ei.dur + ih.dur + hd.dur) #Lag de tempo para calcular a probabilidade da pessoa entrar na UTI e falecer
+defasagem_uti_recuperacao <- nrow(base) - (ei.dur + ih.dur + hr.dur) #linha da base ajustada pelo Lag de tempo (ei.dur + ih.dur + hr.dur) para calcular a probabilidade da pessoa entrar na UTI e se recuperaram
+defasagem_uti_obito <- nrow(base) - (ei.dur + ih.dur + hd.dur) #linha da base ajustada pelo Lag de tempo (ei.dur + ih.dur + hd.dur) para calcular a probabilidade da pessoa entrar na UTI e falecer
 prob1 <- tail(base$CUM_RECUPERADOS_UTI,1)[1]/base[,names(base) == "TOTAL"][defasagem_uti_recuperacao] #Taxa de hospitalizados recuperados de UTI - denominador usando a defasagem
 prob2 <- tail(base$CUM_OBITOS,1)[1]/base[,names(base) == "TOTAL"][defasagem_uti_obito] #Taxa de letalidade entre os internados em UTI - denominador usando a defasagem
 prob <- prob1 + prob2
@@ -434,7 +440,7 @@ write_sheet(id_covid,"resultados", data = resultados)
 
 #Análise dos resultados
 
-resultados_melt <- resultados %>% dplyr::select(DATA, CUM_OBITOS_CENARIO_2, LEITOS_UTI_CENARIO_2)
+resultados_melt <- resultados %>% dplyr::select(DATA, CUM_OBITOS_CENARIO_3, LEITOS_UTI_CENARIO_3)
 resultados_melt <- melt(resultados_melt, id.vars = "DATA")
 
 ggplot(resultados_melt, aes(DATA, value, color = variable))+

@@ -23,14 +23,14 @@ plot1 <- ggplot(cum_base, aes(as.Date(INICIO_SINTOMAS), MEDIANA_CASOS, group = D
 	theme_bw()+
 	labs(y = "Number of Cases", 
 	     x = "Date of Symptoms Onset")+
-	ylim(0,250)
+	ylim(0,350)
 
 plot2 <- ggplot(cum_base, aes(as.Date(INICIO_SINTOMAS), MEDIANA_CASOS, group = DADOS, color = DADOS))+
 	geom_smooth(se = F)+
 	theme_bw()+
 	labs(y = "Number of Cases - Smoothed", 
 	     x = "Date of Symptoms Onset")+
-	ylim(0,250)
+	ylim(0,350)
 
 
 plot3 <- ggplot(pred_base, aes(as.Date(INICIO_SINTOMAS), CUM_CASOS, group = DADOS, color = DADOS))+
