@@ -2,7 +2,8 @@
 
 ## Objetivo do Repositório
 O presente repositório tem como objetivo abrir o método, os scripts e os dados (de forma anonimizada), utilizados para a construção dos cenários utilizados para subsidiar a tomada de decisão no enfrentamento da COVID-19 em Florianópolis. A Gerência de Inteligência e Informação busca, com isso, dar transparência à construção de cenários, chamando população e pesquisadores à contribuição para melhorias e correções nas formas de análise. Os cenários podem ser acessados na página 2 da Sala de Situação do Covidômetro disponibilizado pela Prefeitura de Florianópolis, por meio do link (https://app.powerbi.com/view?r=eyJrIjoiMzc5YmY0NmQtNTFkOS00ZDAxLWE2ZmQtOTZmZDkzM2M5NzAxIiwidCI6IjYyMTIxZmE1LWU3NTAtNDZlYS1hNjg0LTJhZmM2ZDIwYzYyYiJ9) 
-OBSERVAÇÕES IMPORTANTES
+
+## Observações Importantes
 1) O conhecimento acerca da COVID-19 está em franca expansão. Por isso, ajustes e incorporações metodológicas frequentes são necessárias para que possam disponibilizar cenários adequados. Desta forma, o repositório está em constante construção, bem como as explicações sobre o mesmo.
 2) Para interpretar corretamente os cenários, é fundamental que se tenha em mente uma importante citação de Saffo:<sup>1</sup> “O objetivo da predição não é prever o futuro, mas dizer a você o que você precisa saber para realizar ações significativas no presente”. 
 3) Os cenários pressupõem a não falência do sistema hospitalar. Se houver falta de leitos em UTI, todo o paciente que deveria ser internado sob cuidado intensivo, potencialmente irá a óbito.
