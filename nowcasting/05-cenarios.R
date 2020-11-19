@@ -20,7 +20,7 @@ library(lubridate)
 library(RPostgreSQL)
 library(magrittr)
 library(RcppRoll)
-
+gs4_auth(email = "lpgarcia18@gmail.com")
 
 # Nowcasting --------------------------------------------------------------------
 #Utiliza-se os dados da classificação, ou seja,
@@ -74,7 +74,7 @@ covid <- subset(covid, covid$INICIO_SINTOMAS <
 covid$MEDIANA_CASOS <- ifelse(covid$MEDIANA_CASOS == 0,1, covid$MEDIANA_CASOS)
 
 #Utilizando auto.arima para nowcasting do dados truncados
-covid_proj <- forecast(auto.arima(covid$MEDIANA_CASOS), 
+covid_proj <- forecast(auto.arima(covid$MEDIANA_CASOS, lambda = "auto", biasadj = T, stepwise=FALSE, approximation=FALSE, ic = "aicc"), 
 		       h=((Sys.Date()-1)-max(as.Date(covid$INICIO_SINTOMAS))))$mean[1:((Sys.Date()-1)-max(as.Date(covid$INICIO_SINTOMAS)))] %>%
 	as.data.frame()
 
@@ -140,6 +140,7 @@ obitos_num <- obitos_num %>%
 	group_by(DATA) %>%
 	summarise(OBITOS = sum(OBITOS, na.rm = T))
 recuperados <- merge(recuperados, obitos_num, by = "DATA", all = T)
+recuperados <- subset(recuperados, !is.na(recuperados$DATA))
 recuperados[is.na(recuperados)] <- 0
 recuperados$RECUPERADOS <- recuperados$RECUPERADOS - recuperados$OBITOS
 
@@ -201,9 +202,6 @@ res_melt$DATA <- as.Date(res_melt$DATA, origin = "1970-01-01")
 write.csv(res_melt, "nowcasting/dados/rt.csv",row.names = F)
 res_base$DATA <- as.Date(res_base$DATA, origin = "1970-01-01")
 res_base_14dias <- subset(res_base, res_base$DATA > Sys.Date() -15)
-write_sheet(id_covid,"reff", data = res_base_14dias)
-write.csv(res_base_14dias, "nowcasting/dados/res_base_14dias.csv", row.names = F)
-
 
 ggplot(res_melt, aes(DATA, value, group = variable, color = variable))+
 	geom_line()+
@@ -231,7 +229,7 @@ I <- tail(base$INFECTANTES,1)[1]
 R <- tail(base$CUM_RECUPERADOS,1)[1]
 D <- tail(base$CUM_OBITOS,1)[1]
 N <- S + E + I +  R + D
-ir.dur <- mean(obitos$dt_obito - obitos$dt_notif) %>% as.numeric()
+ir.dur <- mean((obitos$dt_obito - obitos$dt_notif), na.rm = T) %>% as.numeric()
 ei.dur <- 2
 id.dur <- 12
 etha <- 1/ir.dur
@@ -241,7 +239,6 @@ delta <- 1/id.dur
 #Estimativa das probabilidade para o modelo
 base$TOTAL <- base$EXPOSTOS + base$INFECTANTES + base$CUM_RECUPERADOS + base$CUM_OBITOS
 base$CUM_CASOS <- cumsum(base$CASOS)
-prob1 <- tail(base$CUM_OBITOS,1)/tail(base$TOTAL,1) #Taxa de hospitalizados recuperados de UTI - denominador usando a defasagem
 prob1 <- tail(base$CUM_OBITOS,1)/base[,names(base) == "TOTAL"][nrow(base) - (3+ei.dur+id.dur)] #Taxa de letalidade entre os internados em UTI - denominador usando a defasagem
 
 init <- init.dcm(S = S,
@@ -358,11 +355,6 @@ resultados <- merge(resultados_cenario_1, resultados_cenario_2, by= "DATA", all 
 resultados <- merge(resultados_cenario_3, resultados, by= "DATA", all = T)
 
 
-write.csv(resultados, "nowcasting/dados/resultados.csv", row.names = F)
-#resultados$DATA <- as.Date(resultados$DATA, origin = "1970-01-01")
-write_sheet(id_covid,"resultados", data = resultados)
-
-
 #Análise dos resultados
 
 resultados_melt <- resultados %>% dplyr::select(DATA, INFECTANTES_CENARIO_1,
@@ -377,4 +369,12 @@ ggplot(resultados_melt, aes(DATA, value, color = variable))+
 	geom_line()+
 	theme_bw()
 
+#Escrevendo resultados
+write_sheet(id_covid,"covid_nowcasted", data = covid)
+write.csv(covid,"nowcasting/dados/covid_nowcasted.csv", row.names = F)
+write_sheet(id_covid,"reff", data = res_base_14dias)
+write.csv(res_base_14dias, "nowcasting/dados/res_base_14dias.csv", row.names = F)
+write.csv(resultados, "nowcasting/dados/resultados.csv", row.names = F)
+#resultados$DATA <- as.Date(resultados$DATA, origin = "1970-01-01")
+write_sheet(id_covid,"resultados", data = resultados)
 

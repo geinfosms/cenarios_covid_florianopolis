@@ -558,74 +558,74 @@ covid$TX_INFECTADOS_TERRITORIO <- if_else(is.na(covid$TX_INFECTADOS_TERRITORIO),
 ## O tráfego é mensurado em 4 avenidas da cidade. Utilizou-se a média destas 4 aveindas
 ## Trabalhou-se com a hipótese de que a chance de transimissão pode variar de acordo com o fluxo de carros em 
 ## diferentes períodos. Por isso, utilizaram-se a mobilidade 14 períodos (Periodo atual e 13 dias anteriores à data de primeiros sintomas)
-id_transito <- "1lfiVlAcIyMB2lBA3GXEwbN3qQJw0XdvoiNMJfxh1tPI"
-transito <- read_sheet(id_transito,"fluxo_automoveis",skip = 0,col_names = T) %>% as.data.frame()
-transito <- transito[,c(1,5)]
-transito <- na.omit(transito)
-names(transito) <- c("INICIO_SINTOMAS", "MEDIA_TRANSITO")
-transito$INICIO_SINTOMAS <- as.Date(transito$INICIO_SINTOMAS, format = "%d/%m/%Y")
-transito_lag1 <- transito
-transito_lag1$INICIO_SINTOMAS <- transito_lag1$INICIO_SINTOMAS + 1
-transito_lag2 <- transito
-transito_lag2$INICIO_SINTOMAS <- transito_lag2$INICIO_SINTOMAS + 2
-transito_lag3 <- transito
-transito_lag3$INICIO_SINTOMAS <- transito_lag3$INICIO_SINTOMAS + 3
-transito_lag4 <- transito
-transito_lag4$INICIO_SINTOMAS <- transito_lag4$INICIO_SINTOMAS + 4
-transito_lag5 <- transito
-transito_lag5$INICIO_SINTOMAS <- transito_lag5$INICIO_SINTOMAS + 5
-transito_lag6 <- transito
-transito_lag6$INICIO_SINTOMAS <- transito_lag6$INICIO_SINTOMAS + 6
-transito_lag7 <- transito
-transito_lag7$INICIO_SINTOMAS <- transito_lag7$INICIO_SINTOMAS + 7
-transito_lag8 <- transito
-transito_lag8$INICIO_SINTOMAS <- transito_lag8$INICIO_SINTOMAS + 8
-transito_lag9 <- transito
-transito_lag9$INICIO_SINTOMAS <- transito_lag9$INICIO_SINTOMAS + 9
-transito_lag10 <- transito
-transito_lag10$INICIO_SINTOMAS <- transito_lag10$INICIO_SINTOMAS + 10
-transito_lag11 <- transito
-transito_lag11$INICIO_SINTOMAS <- transito_lag11$INICIO_SINTOMAS + 11
-transito_lag12 <- transito
-transito_lag12$INICIO_SINTOMAS <- transito_lag12$INICIO_SINTOMAS + 12
-transito_lag13 <- transito
-transito_lag13$INICIO_SINTOMAS <- transito_lag13$INICIO_SINTOMAS + 13
-transito <- Reduce(function(x,y) merge(x = x, y = y, by = c("INICIO_SINTOMAS"), all = T),
-       		list(transito,
-       		     transito_lag1,
-       		     transito_lag2,
-       		     transito_lag3,
-       		     transito_lag4,
-       		     transito_lag5,
-       		     transito_lag6,
-       		     transito_lag7,
-       		     transito_lag8,
-       		     transito_lag9,
-       		     transito_lag10,
-       		     transito_lag11,
-       		     transito_lag12,
-       		     transito_lag13
-)) %>% as.data.frame()
-
-
-
-names(transito) <- c("INICIO_SINTOMAS",
-		     "MEDIA_TRANSITO",
-		     "MEDIA_TRANSITO_LAG1",
-		     "MEDIA_TRANSITO_LAG2",
-		     "MEDIA_TRANSITO_LAG3",
-		     "MEDIA_TRANSITO_LAG4",
-		     "MEDIA_TRANSITO_LAG5",
-		     "MEDIA_TRANSITO_LAG6",
-		     "MEDIA_TRANSITO_LAG7",
-		     "MEDIA_TRANSITO_LAG8",
-		     "MEDIA_TRANSITO_LAG9",
-		     "MEDIA_TRANSITO_LAG10",
-		     "MEDIA_TRANSITO_LAG11",
-		     "MEDIA_TRANSITO_LAG12",
-		     "MEDIA_TRANSITO_LAG13")
-
-covid <- merge(covid, transito, by = "INICIO_SINTOMAS", all = T)
+# id_transito <- "1lfiVlAcIyMB2lBA3GXEwbN3qQJw0XdvoiNMJfxh1tPI"
+# transito <- read_sheet(id_transito,"fluxo_automoveis",skip = 0,col_names = T) %>% as.data.frame()
+# transito <- transito[,c(1,5)]
+# transito <- na.omit(transito)
+# names(transito) <- c("INICIO_SINTOMAS", "MEDIA_TRANSITO")
+# transito$INICIO_SINTOMAS <- as.Date(transito$INICIO_SINTOMAS, format = "%d/%m/%Y")
+# transito_lag1 <- transito
+# transito_lag1$INICIO_SINTOMAS <- transito_lag1$INICIO_SINTOMAS + 1
+# transito_lag2 <- transito
+# transito_lag2$INICIO_SINTOMAS <- transito_lag2$INICIO_SINTOMAS + 2
+# transito_lag3 <- transito
+# transito_lag3$INICIO_SINTOMAS <- transito_lag3$INICIO_SINTOMAS + 3
+# transito_lag4 <- transito
+# transito_lag4$INICIO_SINTOMAS <- transito_lag4$INICIO_SINTOMAS + 4
+# transito_lag5 <- transito
+# transito_lag5$INICIO_SINTOMAS <- transito_lag5$INICIO_SINTOMAS + 5
+# transito_lag6 <- transito
+# transito_lag6$INICIO_SINTOMAS <- transito_lag6$INICIO_SINTOMAS + 6
+# transito_lag7 <- transito
+# transito_lag7$INICIO_SINTOMAS <- transito_lag7$INICIO_SINTOMAS + 7
+# transito_lag8 <- transito
+# transito_lag8$INICIO_SINTOMAS <- transito_lag8$INICIO_SINTOMAS + 8
+# transito_lag9 <- transito
+# transito_lag9$INICIO_SINTOMAS <- transito_lag9$INICIO_SINTOMAS + 9
+# transito_lag10 <- transito
+# transito_lag10$INICIO_SINTOMAS <- transito_lag10$INICIO_SINTOMAS + 10
+# transito_lag11 <- transito
+# transito_lag11$INICIO_SINTOMAS <- transito_lag11$INICIO_SINTOMAS + 11
+# transito_lag12 <- transito
+# transito_lag12$INICIO_SINTOMAS <- transito_lag12$INICIO_SINTOMAS + 12
+# transito_lag13 <- transito
+# transito_lag13$INICIO_SINTOMAS <- transito_lag13$INICIO_SINTOMAS + 13
+# transito <- Reduce(function(x,y) merge(x = x, y = y, by = c("INICIO_SINTOMAS"), all = T),
+#        		list(transito,
+#        		     transito_lag1,
+#        		     transito_lag2,
+#        		     transito_lag3,
+#        		     transito_lag4,
+#        		     transito_lag5,
+#        		     transito_lag6,
+#        		     transito_lag7,
+#        		     transito_lag8,
+#        		     transito_lag9,
+#        		     transito_lag10,
+#        		     transito_lag11,
+#        		     transito_lag12,
+#        		     transito_lag13
+# )) %>% as.data.frame()
+# 
+# 
+# 
+# names(transito) <- c("INICIO_SINTOMAS",
+# 		     "MEDIA_TRANSITO",
+# 		     "MEDIA_TRANSITO_LAG1",
+# 		     "MEDIA_TRANSITO_LAG2",
+# 		     "MEDIA_TRANSITO_LAG3",
+# 		     "MEDIA_TRANSITO_LAG4",
+# 		     "MEDIA_TRANSITO_LAG5",
+# 		     "MEDIA_TRANSITO_LAG6",
+# 		     "MEDIA_TRANSITO_LAG7",
+# 		     "MEDIA_TRANSITO_LAG8",
+# 		     "MEDIA_TRANSITO_LAG9",
+# 		     "MEDIA_TRANSITO_LAG10",
+# 		     "MEDIA_TRANSITO_LAG11",
+# 		     "MEDIA_TRANSITO_LAG12",
+# 		     "MEDIA_TRANSITO_LAG13")
+# 
+# covid <- merge(covid, transito, by = "INICIO_SINTOMAS", all = T)
 
 
 ## Extraindo dados missing que foram inseridos com a base de transito
